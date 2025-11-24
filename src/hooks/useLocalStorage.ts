@@ -1,6 +1,6 @@
-import { useCallback } from 'react';
-import { storage, useStorageStore } from '../store/storage.js';
-import type { UseSessionOptions } from '../types.js';
+import { useCallback } from "react";
+import { storage, useStorageStore } from "../store/storage.js";
+import type { UseSessionOptions } from "../types.js";
 
 export function useLocalStorage<T = any, S = T>(
   key: string,
@@ -18,9 +18,26 @@ export function useLocalStorage<T = any, S = T>(
 
   const setItem = useCallback(
     (newValue: T) => {
-      const valueToStore = jsonSerialize
-        ? JSON.stringify(newValue)
-        : (newValue as string);
+      let valueToStore: string | number | boolean;
+
+      if (jsonSerialize) {
+        valueToStore = JSON.stringify(newValue);
+      } else {
+        // When jsonSerialize is false, only allow primitive types
+        if (
+          typeof newValue === "string" ||
+          typeof newValue === "number" ||
+          typeof newValue === "boolean"
+        ) {
+          valueToStore = newValue;
+        } else {
+          throw new Error(
+            `MMKV can only store primitive types (string, number, boolean) when jsonSerialize is false. ` +
+              `Received type: ${typeof newValue}. Either set jsonSerialize to true or pass a primitive value.`
+          );
+        }
+      }
+
       storage.set(key, valueToStore);
       setStoreItem(key, newValue);
     },

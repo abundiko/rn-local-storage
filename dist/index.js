@@ -9,4 +9,5 @@
  */
 export { useLocalStorage } from './hooks/useLocalStorage.js';
 export { storage } from './store/storage.js';
+export { RNLocalStorage } from './RNLocalStorage.js';
 //# sourceMappingURL=index.js.map
