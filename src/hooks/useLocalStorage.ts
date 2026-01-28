@@ -4,7 +4,7 @@ import type { UseSessionOptions } from "../types.js";
 
 export function useLocalStorage<T = any, S = T>(
   key: string,
-  options: UseSessionOptions<T, S>
+  options: UseSessionOptions<T, S>,
 ) {
   const { defaultValue, jsonSerialize = true, selector } = options;
   const setStoreItem = useStorageStore((s) => s.setItem);
@@ -33,7 +33,7 @@ export function useLocalStorage<T = any, S = T>(
         } else {
           throw new Error(
             `MMKV can only store primitive types (string, number, boolean) when jsonSerialize is false. ` +
-              `Received type: ${typeof newValue}. Either set jsonSerialize to true or pass a primitive value.`
+              `Received type: ${typeof newValue}. Either set jsonSerialize to true or pass a primitive value.`,
           );
         }
       }
@@ -41,11 +41,11 @@ export function useLocalStorage<T = any, S = T>(
       storage.set(key, valueToStore);
       setStoreItem(key, newValue);
     },
-    [key, jsonSerialize, setStoreItem]
+    [key, jsonSerialize, setStoreItem],
   );
 
   const removeItem = useCallback(() => {
-    storage.delete(key);
+    storage.remove(key);
     removeStoreItem(key);
   }, [key, removeStoreItem]);
 
@@ -56,7 +56,7 @@ export function useLocalStorage<T = any, S = T>(
       const newItem = { ...current, ...partial };
       setItem(newItem);
     },
-    [key, defaultValue, setItem]
+    [key, defaultValue, setItem],
   );
 
   return { item, setItem, removeItem, updateItem };

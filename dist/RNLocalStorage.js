@@ -27,7 +27,7 @@ export function RNLocalStorage(key, options) {
         useStorageStore.getState().setItem(key, newValue);
     };
     const remove = () => {
-        storage.delete(key);
+        storage.remove(key);
         useStorageStore.getState().removeItem(key);
     };
     const update = (partial) => {

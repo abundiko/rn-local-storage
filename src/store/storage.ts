@@ -1,8 +1,8 @@
-import { MMKV } from 'react-native-mmkv';
-import { create } from 'zustand';
+import { createMMKV } from "react-native-mmkv";
+import { create } from "zustand";
 
-export const storage = new MMKV({
-  id: 'local-storage',
+export const storage = createMMKV({
+  id: "local-storage",
 });
 
 export type StorageState = {
@@ -19,7 +19,7 @@ function getMMKVData() {
     const raw = storage.getString(key);
     try {
       // Try to parse as JSON, if it fails or is "null", keep raw or null
-      initialData[key] = JSON.parse(raw ?? 'null');
+      initialData[key] = JSON.parse(raw ?? "null");
     } catch {
       initialData[key] = raw;
     }

@@ -30,7 +30,7 @@ export function useLocalStorage(key, options) {
         setStoreItem(key, newValue);
     }, [key, jsonSerialize, setStoreItem]);
     const removeItem = useCallback(() => {
-        storage.delete(key);
+        storage.remove(key);
         removeStoreItem(key);
     }, [key, removeStoreItem]);
     const updateItem = useCallback((partial) => {

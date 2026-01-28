@@ -2,6 +2,8 @@
 
 A lightweight, typed, and reactive local storage hook for React Native, built on top of `react-native-mmkv` and `zustand`.
 
+NOTE: use version `1.0.x` for react-native-mmkv versions `3.x.x`
+
 ## Installation
 
 ```bash

@@ -1,6 +1,6 @@
 {
   "name": "@abundiko/rn-local-storage",
-  "version": "1.0.5",
+  "version": "1.1.0",
   "description": "Local storage for react native",
   "keywords": [
     "rn-local-storage",
@@ -33,7 +33,7 @@
     "typescript": "^5.7.3"
   },
   "peerDependencies": {
-    "react-native-mmkv": "^3.0.0 || ^4.0.0",
+    "react-native-mmkv": "^4.0.0",
     "zustand": ">=4.5.0"
   }
 }

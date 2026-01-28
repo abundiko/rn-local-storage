@@ -11,7 +11,7 @@ export interface RNLocalStorageInstance<T> {
 
 export function RNLocalStorage<T = any>(
   key: string,
-  options: UseSessionOptions<T, T>
+  options: UseSessionOptions<T, T>,
 ): RNLocalStorageInstance<T> {
   const { defaultValue, jsonSerialize = true } = options;
 
@@ -37,7 +37,7 @@ export function RNLocalStorage<T = any>(
       } else {
         throw new Error(
           `MMKV can only store primitive types (string, number, boolean) when jsonSerialize is false. ` +
-            `Received type: ${typeof newValue}. Either set jsonSerialize to true or pass a primitive value.`
+            `Received type: ${typeof newValue}. Either set jsonSerialize to true or pass a primitive value.`,
         );
       }
     }
@@ -47,7 +47,7 @@ export function RNLocalStorage<T = any>(
   };
 
   const remove = (): void => {
-    storage.delete(key);
+    storage.remove(key);
     useStorageStore.getState().removeItem(key);
   };
 
