@@ -1,6 +1,7 @@
 import { useCallback } from "react";
 import { storage, useStorageStore } from "../store/storage.js";
-import type { UseSessionOptions } from "../types.js";
+import type { UseSessionOptions, SetValueCallback, UpdateValueCallback } from "../types.js";
+import { serializeValue, deepMerge } from "../utils.js";
 
 export function useLocalStorage<T = any, S = T>(
   key: string,
@@ -9,6 +10,9 @@ export function useLocalStorage<T = any, S = T>(
   const { defaultValue, jsonSerialize = true, selector } = options;
   const setStoreItem = useStorageStore((s) => s.setItem);
   const removeStoreItem = useStorageStore((s) => s.removeItem);
+  const hydrateKey = useStorageStore((s) => s.hydrateKey);
+
+  hydrateKey(key);
 
   const item = useStorageStore((state) => {
     const rawOrParsed = state.data[key];
@@ -17,43 +21,31 @@ export function useLocalStorage<T = any, S = T>(
   });
 
   const setItem = useCallback(
-    (newValue: T) => {
-      let valueToStore: string | number | boolean;
+    (newValue: T | SetValueCallback<T>) => {
+      const current = (useStorageStore.getState().data[key] as T) ?? defaultValue;
+      const resolvedValue = typeof newValue === "function"
+        ? (newValue as SetValueCallback<T>)(current)
+        : newValue;
 
-      if (jsonSerialize) {
-        valueToStore = JSON.stringify(newValue);
-      } else {
-        // When jsonSerialize is false, only allow primitive types
-        if (
-          typeof newValue === "string" ||
-          typeof newValue === "number" ||
-          typeof newValue === "boolean"
-        ) {
-          valueToStore = newValue;
-        } else {
-          throw new Error(
-            `MMKV can only store primitive types (string, number, boolean) when jsonSerialize is false. ` +
-              `Received type: ${typeof newValue}. Either set jsonSerialize to true or pass a primitive value.`,
-          );
-        }
-      }
-
+      const valueToStore = serializeValue(resolvedValue, jsonSerialize);
       storage.set(key, valueToStore);
-      setStoreItem(key, newValue);
+      setStoreItem(key, resolvedValue);
     },
-    [key, jsonSerialize, setStoreItem],
+    [key, jsonSerialize, defaultValue, setStoreItem],
   );
 
   const removeItem = useCallback(() => {
-    storage.remove(key);
+    storage.delete(key);
     removeStoreItem(key);
   }, [key, removeStoreItem]);
 
   const updateItem = useCallback(
-    (partial: Partial<T>) => {
-      const current =
-        (useStorageStore.getState().data[key] as T) ?? defaultValue;
-      const newItem = { ...current, ...partial };
+    (partial: Partial<T> | UpdateValueCallback<T>) => {
+      const current = (useStorageStore.getState().data[key] as T) ?? defaultValue;
+      const resolvedPartial = typeof partial === "function"
+        ? (partial as UpdateValueCallback<T>)(current)
+        : partial;
+      const newItem = deepMerge(current as Record<string, unknown>, resolvedPartial as Partial<Record<string, unknown>>) as T;
       setItem(newItem);
     },
     [key, defaultValue, setItem],

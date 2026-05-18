@@ -1,6 +1,6 @@
 {
   "name": "@abundiko/rn-local-storage",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Local storage for react native",
   "keywords": [
     "rn-local-storage",
@@ -11,7 +11,7 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/abundiko/rn-local-storage.git"
+    "url": "git+https://github.com/abundiko/rn-local-storage.git"
   },
   "license": "MIT",
   "author": "abundiko",
@@ -22,7 +22,7 @@
   ],
   "scripts": {
     "build": "tsc",
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "bun test",
     "check-exports": "attw --pack .",
     "local-release": "changeset version && changeset publish"
   },
