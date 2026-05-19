@@ -1,25 +1,22 @@
-import { createMMKV } from "react-native-mmkv";
+import { MMKV } from "react-native-mmkv";
 import { create } from "zustand";
-export const storage = createMMKV({
+export const storage = new MMKV({
     id: "local-storage",
 });
-function getMMKVData() {
-    const allKeys = storage.getAllKeys();
-    const initialData = {};
-    for (const key of allKeys) {
-        const raw = storage.getString(key);
-        try {
-            // Try to parse as JSON, if it fails or is "null", keep raw or null
-            initialData[key] = JSON.parse(raw !== null && raw !== void 0 ? raw : "null");
-        }
-        catch (_a) {
-            initialData[key] = raw;
-        }
+function safeParse(raw) {
+    if (raw === undefined)
+        return undefined;
+    try {
+        const parsed = JSON.parse(raw);
+        return parsed;
     }
-    return initialData;
+    catch (_a) {
+        return raw;
+    }
 }
-export const useStorageStore = create((set) => ({
-    data: getMMKVData(),
+export const useStorageStore = create((set, get) => ({
+    data: {},
+    hydratedKeys: new Set(),
     setItem: (key, value) => set((state) => ({
         data: Object.assign(Object.assign({}, state.data), { [key]: value }),
     })),
@@ -28,5 +25,16 @@ export const useStorageStore = create((set) => ({
         delete newData[key];
         return { data: newData };
     }),
+    hydrateKey: (key) => {
+        const state = get();
+        if (state.hydratedKeys.has(key))
+            return;
+        const raw = storage.getString(key);
+        const value = safeParse(raw);
+        set((state) => ({
+            data: Object.assign(Object.assign({}, state.data), { [key]: value }),
+            hydratedKeys: new Set(state.hydratedKeys).add(key),
+        }));
+    },
 }));
 //# sourceMappingURL=storage.js.map
