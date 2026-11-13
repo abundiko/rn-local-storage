@@ -6,6 +6,7 @@ export function useLocalStorage(key, options) {
     const setStoreItem = useStorageStore((s) => s.setItem);
     const removeStoreItem = useStorageStore((s) => s.removeItem);
     const hydrateKey = useStorageStore((s) => s.hydrateKey);
+    // Hydrate initial key synchronously if not yet loaded into store
     hydrateKey(key);
     const item = useStorageStore((state) => {
         const rawOrParsed = state.data[key];
@@ -23,8 +24,9 @@ export function useLocalStorage(key, options) {
         setStoreItem(key, resolvedValue);
     }, [key, jsonSerialize, defaultValue, setStoreItem]);
     const removeItem = useCallback(() => {
-        storage.delete(key);
+        const removed = storage.remove(key);
         removeStoreItem(key);
+        return removed;
     }, [key, removeStoreItem]);
     const updateItem = useCallback((partial) => {
         var _a;

@@ -9,7 +9,7 @@ import { serializeValue, deepMerge } from "./utils.js";
 export interface RNLocalStorageInstance<T, S = T> {
   get: () => T;
   set: (newValue: T | SetValueCallback<T>) => void;
-  remove: () => void;
+  remove: () => boolean;
   update: (partial: Partial<T> | UpdateValueCallback<T>) => void;
   subscribe: (callback: (value: T) => void) => () => void;
   subscribeWithSelector: (selector: (state: T) => S, callback: (value: S) => void) => () => void;
@@ -40,9 +40,10 @@ export function RNLocalStorage<T = any, S = T>(
     useStorageStore.getState().setItem(key, resolvedValue);
   };
 
-  const remove = (): void => {
-    storage.delete(key);
+  const remove = (): boolean => {
+    const removed = storage.remove(key);
     useStorageStore.getState().removeItem(key);
+    return removed;
   };
 
   const update = (partial: Partial<T> | UpdateValueCallback<T>): void => {
@@ -55,7 +56,7 @@ export function RNLocalStorage<T = any, S = T>(
   };
 
   const subscribe = (callback: (value: T) => void): (() => void) => {
-    let prevValue: T | undefined = undefined;
+    let prevValue: T = getValue();
 
     return useStorageStore.subscribe((state) => {
       const rawOrParsed = state.data[key];
@@ -63,7 +64,7 @@ export function RNLocalStorage<T = any, S = T>(
         rawOrParsed !== undefined ? rawOrParsed : defaultValue
       ) as T;
 
-      if (prevValue === undefined || JSON.stringify(prevValue) !== JSON.stringify(value)) {
+      if (JSON.stringify(prevValue) !== JSON.stringify(value)) {
         prevValue = value;
         callback(value);
       }
@@ -74,7 +75,7 @@ export function RNLocalStorage<T = any, S = T>(
     selector: (state: T) => S,
     callback: (value: S) => void,
   ): (() => void) => {
-    let prevSelected: S | undefined = undefined;
+    let prevSelected: S = selector(getValue());
 
     return useStorageStore.subscribe((state) => {
       const rawOrParsed = state.data[key];
@@ -84,7 +85,7 @@ export function RNLocalStorage<T = any, S = T>(
 
       const selected = selector(value);
 
-      if (prevSelected === undefined || JSON.stringify(prevSelected) !== JSON.stringify(selected)) {
+      if (JSON.stringify(prevSelected) !== JSON.stringify(selected)) {
         prevSelected = selected;
         callback(selected);
       }

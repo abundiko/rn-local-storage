@@ -1,9 +1,9 @@
-import { MMKV } from "react-native-mmkv";
+import { createMMKV } from "react-native-mmkv";
 import { create } from "zustand";
-export const storage = new MMKV({
+export const storage = createMMKV({
     id: "local-storage",
 });
-function safeParse(raw) {
+export function safeParse(raw) {
     if (raw === undefined)
         return undefined;
     try {

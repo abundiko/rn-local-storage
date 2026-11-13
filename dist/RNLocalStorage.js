@@ -18,8 +18,9 @@ export function RNLocalStorage(key, options) {
         useStorageStore.getState().setItem(key, resolvedValue);
     };
     const remove = () => {
-        storage.delete(key);
+        const removed = storage.remove(key);
         useStorageStore.getState().removeItem(key);
+        return removed;
     };
     const update = (partial) => {
         const current = getValue();
@@ -30,23 +31,23 @@ export function RNLocalStorage(key, options) {
         set(newItem);
     };
     const subscribe = (callback) => {
-        let prevValue = undefined;
+        let prevValue = getValue();
         return useStorageStore.subscribe((state) => {
             const rawOrParsed = state.data[key];
             const value = (rawOrParsed !== undefined ? rawOrParsed : defaultValue);
-            if (prevValue === undefined || JSON.stringify(prevValue) !== JSON.stringify(value)) {
+            if (JSON.stringify(prevValue) !== JSON.stringify(value)) {
                 prevValue = value;
                 callback(value);
             }
         });
     };
     const subscribeWithSelector = (selector, callback) => {
-        let prevSelected = undefined;
+        let prevSelected = selector(getValue());
         return useStorageStore.subscribe((state) => {
             const rawOrParsed = state.data[key];
             const value = (rawOrParsed !== undefined ? rawOrParsed : defaultValue);
             const selected = selector(value);
-            if (prevSelected === undefined || JSON.stringify(prevSelected) !== JSON.stringify(selected)) {
+            if (JSON.stringify(prevSelected) !== JSON.stringify(selected)) {
                 prevSelected = selected;
                 callback(selected);
             }

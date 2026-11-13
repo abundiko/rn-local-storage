@@ -1,7 +1,7 @@
-import { MMKV } from "react-native-mmkv";
+import { createMMKV, type MMKV } from "react-native-mmkv";
 import { create } from "zustand";
 
-export const storage = new MMKV({
+export const storage: MMKV = createMMKV({
   id: "local-storage",
 });
 
@@ -13,7 +13,7 @@ export type StorageState = {
   hydrateKey: (key: string) => void;
 };
 
-function safeParse(raw: string | undefined): any {
+export function safeParse(raw: string | undefined): any {
   if (raw === undefined) return undefined;
   try {
     const parsed = JSON.parse(raw);

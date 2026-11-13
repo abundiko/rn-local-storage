@@ -1,34 +1,60 @@
 # @abundiko/rn-local-storage
 
-A lightweight, typed, and reactive local storage hook for React Native, built on top of `react-native-mmkv` and `zustand`.
+A lightweight, typed, and reactive local storage hook and utility for React Native, built on top of `react-native-mmkv` and `zustand`.
 
-NOTE: use version `1.0.x` for react-native-mmkv versions `3.x.x`
+> **Compatibility Notice:**
+> - Use version **`2.x.x`** for `react-native-mmkv` **`>= 4.0.0`** (Nitro Modules architecture).
+> - Use version **`1.x.x`** for `react-native-mmkv` **`3.x.x`**.
 
-## Installation
+---
+
+## Prerequisites & Installation
+
+`react-native-mmkv` v4 is built using [Nitro Modules](https://nitro.margelo.com). As a result, you must install `react-native-nitro-modules` alongside `react-native-mmkv` and `zustand`.
+
+> **Requirements:** React Native **>= 0.75.0** (Supports both Old Architecture and New Architecture).
 
 ```bash
-npm install @abundiko/rn-local-storage react-native-mmkv zustand
+npm install @abundiko/rn-local-storage react-native-mmkv react-native-nitro-modules zustand
 # or
-bun add @abundiko/rn-local-storage react-native-mmkv zustand
+bun add @abundiko/rn-local-storage react-native-mmkv react-native-nitro-modules zustand
+# or
+yarn add @abundiko/rn-local-storage react-native-mmkv react-native-nitro-modules zustand
 ```
 
-## NOTE
+### Expo Users
+If you are using Expo, you must use a **development build** (`npx expo run:ios` or `npx expo run:android` / EAS Build) because `react-native-mmkv` and Nitro Modules contain native code and are not supported inside the standard Expo Go app.
 
-- if youre using expo, you need to use a development build because `react-native-mmkv` is not supported in the expo go app
+---
+
+## Breaking Changes in 2.0 (Migration from 1.x)
+
+1. **`react-native-nitro-modules` is required:**
+   Install `react-native-nitro-modules` in your application.
+
+2. **`remove()` replaces `delete()`:**
+   To align with `react-native-mmkv` v4 (where `.delete()` was replaced by `.remove()` to avoid C++ keyword collision), `storage.remove(key)` is used. Hook's `removeItem()` and instance's `remove()` now return a `boolean` indicating if the key was deleted.
+
+3. **Storage Factory Function:**
+   `storage` instance is created via `createMMKV()` factory from `react-native-mmkv` instead of `new MMKV()`. Both `createMMKV` and types (`MMKV`, `Configuration`, `Mode`, `RecoveryStrategy`) are exported for convenience.
+
+4. **ArrayBuffer Storage Support:**
+   When `jsonSerialize: false`, primitive types (`string`, `number`, `boolean`) and `ArrayBuffer` can be stored directly.
+
+---
 
 ## Best Practices
 
-### Create Custom Hooks
+### Create Custom Domain Hooks
 
-**Avoid using `useLocalStorage` directly in your components.**
+**Avoid scattering `useLocalStorage` directly across multiple components.**
 
-Using `useLocalStorage` directly can lead to:
+Using raw string keys directly in components can lead to:
+- Scattered magic strings.
+- Inconsistent types across the application.
+- Difficulty when refactoring storage schemas.
 
-- Scattered magic strings (keys).
-- Inconsistent types across the app.
-- Difficulty in refactoring.
-
-Instead, create domain-specific hooks for each storage key.
+Instead, create focused domain hooks for each storage item.
 
 #### Example: `useLSTheme`
 
@@ -61,16 +87,18 @@ export default function App() {
   const { theme, setTheme } = useLSTheme();
 
   return (
-    <View style={{ backgroundColor: theme === "light" ? "#fff" : "#000" }}>
-      <Text>Current Theme: {theme}</Text>
+    <View style={{ backgroundColor: theme === "light" ? "#fff" : "#000", flex: 1, padding: 20 }}>
+      <Text style={{ color: theme === "light" ? "#000" : "#fff" }}>Current Theme: {theme}</Text>
       <Button
         title="Toggle Theme"
-        onPress={() => setTheme(theme === "light" ? "dark" : "light")}
+        onPress={() => setTheme((curr) => (curr === "light" ? "dark" : "light"))}
       />
     </View>
   );
 }
 ```
+
+---
 
 ## Usage Reference
 
@@ -79,9 +107,22 @@ export default function App() {
 ```tsx
 import { useLocalStorage } from "@abundiko/rn-local-storage";
 
-const { item, setItem, removeItem } = useLocalStorage("my-key", {
+const { item, setItem, removeItem, updateItem } = useLocalStorage("my-key", {
   defaultValue: "default value",
 });
+```
+
+### Functional Updates
+
+Both `setItem` and `updateItem` support callback functions that receive the current state:
+
+```tsx
+const { item, setItem } = useLocalStorage<number>("counter", {
+  defaultValue: 0,
+});
+
+// Update based on previous state
+setItem((prev) => prev + 1);
 ```
 
 ### Typed Storage
@@ -100,7 +141,7 @@ const { item: user, setItem: setUser } = useLocalStorage<User>("user-profile", {
 
 ### Using Selectors
 
-Use selectors to subscribe to specific parts of the state to optimize performance.
+Use selectors to subscribe only to specific parts of the state to optimize performance:
 
 ```tsx
 const { item: userName } = useLocalStorage<User, string>("user-profile", {
@@ -109,134 +150,101 @@ const { item: userName } = useLocalStorage<User, string>("user-profile", {
 });
 ```
 
-### Custom Serialization
+### Custom Serialization / Raw Primitives
 
-Disable JSON serialization for simple strings.
+Disable JSON serialization when you want to store primitives (`string`, `number`, `boolean`) or `ArrayBuffer` directly into MMKV:
 
 ```tsx
 const { item, setItem } = useLocalStorage("theme", {
   defaultValue: "light",
-  jsonSerialize: false, // Store as raw string
+  jsonSerialize: false, // Store directly as primitive
 });
 ```
 
-### Accessing the Storage Instance
+### Updating Partial State (Deep Merge)
 
-Direct synchronous access to `react-native-mmkv`.
+`updateItem` deeply merges nested objects instead of overwriting the whole state:
+
+```tsx
+type Settings = {
+  theme: string;
+  notifications: {
+    email: boolean;
+    push: boolean;
+  };
+};
+
+const { item, updateItem } = useLocalStorage<Settings>("settings", {
+  defaultValue: {
+    theme: "light",
+    notifications: { email: true, push: false },
+  },
+});
+
+// Deeply merges notifications.push without affecting notifications.email
+updateItem({
+  notifications: { push: true } as any,
+});
+
+// Or using an update function:
+updateItem((curr) => ({
+  notifications: { ...curr.notifications, push: true },
+}));
+```
+
+### Direct Storage Access
+
+Access the underlying `react-native-mmkv` instance directly:
 
 ```tsx
 import { storage } from "@abundiko/rn-local-storage";
 
 const value = storage.getString("some-key");
 storage.set("some-key", "some-value");
+const removed = storage.remove("some-key");
 ```
 
-### Updating Partial State
+---
 
-Shallow merge updates.
+## Non-Hook Usage (Outside React Components)
 
-```tsx
-const { updateItem } = useLocalStorage<User>("user-profile", {
-  defaultValue: { id: "1", name: "John", age: 30 },
-});
-
-updateItem({ age: 31 });
-```
-
-## API
-
-### `useLocalStorage<T, S>(key, options)`
-
-- **key**: `string` - The unique key for the storage item.
-- **options**: `UseSessionOptions<T, S>`
-  - **defaultValue**: `T` - The value to use if the key does not exist.
-  - **jsonSerialize**: `boolean` (default: `true`) - Enable/disable JSON serialization.
-  - **selector**: `(state: T) => S` - Optional selector function.
-
-Returns:
-
-- **item**: `S` - The current value.
-- **setItem**: `(newValue: T) => void` - Update the value.
-- **removeItem**: `() => void` - Remove the item.
-- **updateItem**: `(partial: Partial<T>) => void` - Shallow update.
-
-### `RNLocalStorage<T>(key, options)` - Non-Hook Implementation
-
-Use this when you need to access local storage outside of React components (e.g., in utility functions, services, or class instances).
-
-- **key**: `string` - The unique key for the storage item.
-- **options**: `UseSessionOptions<T, T>`
-  - **defaultValue**: `T` - The value to use if the key does not exist.
-  - **jsonSerialize**: `boolean` (default: `true`) - Enable/disable JSON serialization.
-
-Returns an object with methods:
-
-- **get**: `() => T` - Get the current value synchronously.
-- **set**: `(newValue: T) => void` - Update the value.
-- **remove**: `() => void` - Remove the item.
-- **update**: `(partial: Partial<T>) => void` - Shallow merge update.
-- **subscribe**: `(callback: (value: T) => void) => () => void` - Subscribe to changes. Returns an unsubscribe function.
-
-## Non-Hook Usage (Outside Components)
-
-### Basic Usage
+Use `RNLocalStorage` when you need access to local storage outside React component lifecycles (e.g. background tasks, utility functions, state managers, services):
 
 ```ts
 import { RNLocalStorage } from "@abundiko/rn-local-storage";
 
-// Create an instance
-const themeLSValue = RNLocalStorage<"light" | "dark">("app-theme", {
+// Create instance
+const themeStorage = RNLocalStorage<"light" | "dark">("app-theme", {
   defaultValue: "light",
 });
 
-// Get the current value
-const currentTheme = themeLSValue.get();
+// Get current value synchronously
+const currentTheme = themeStorage.get();
 
-// Set a new value
-themeLSValue.set("dark");
-
-// Remove the value
-themeLSValue.remove();
-```
-
-### Typed Storage Outside Components
-
-```ts
-type User = {
-  id: string;
-  name: string;
-  age: number;
-};
-
-const userLS = RNLocalStorage<User>("user-profile", {
-  defaultValue: { id: "1", name: "John", age: 30 },
-});
-
-// Get user
-const user = userLS.get();
-
-// Update user
-userLS.set({ id: "2", name: "Jane", age: 25 });
+// Update value (supports direct value or callback)
+themeStorage.set("dark");
+themeStorage.set((prev) => (prev === "dark" ? "light" : "dark"));
 
 // Partial update
-userLS.update({ age: 26 });
-```
+themeStorage.update((prev) => ({ ... }));
 
-### Subscribe to Changes
-
-```ts
-const themeLSValue = RNLocalStorage<"light" | "dark">("app-theme", {
-  defaultValue: "light",
-});
+// Remove value (returns boolean)
+const wasRemoved = themeStorage.remove();
 
 // Subscribe to changes
-const unsubscribe = themeLSValue.subscribe((newTheme) => {
+const unsubscribe = themeStorage.subscribe((newTheme) => {
   console.log("Theme changed to:", newTheme);
-  // Update your app's theme engine, etc.
 });
 
-// Later, unsubscribe when no longer needed
+// Subscribe with selector
+const unsubscribeSelector = themeStorage.subscribeWithSelector(
+  (state) => state,
+  (val) => console.log("Selected:", val),
+);
+
+// Unsubscribe
 unsubscribe();
+unsubscribeSelector();
 ```
 
 ### Example: Theme Service
@@ -261,8 +269,7 @@ class ThemeService {
   }
 
   toggleTheme(): void {
-    const current = this.getTheme();
-    this.setTheme(current === "light" ? "dark" : "light");
+    this.themeLS.set((current) => (current === "light" ? "dark" : "light"));
   }
 
   onThemeChange(callback: (theme: Theme) => void): () => void {
@@ -272,3 +279,54 @@ class ThemeService {
 
 export const themeService = new ThemeService();
 ```
+
+---
+
+## API Reference
+
+### `useLocalStorage<T, S>(key, options)`
+
+Hook for managing local storage state in React components.
+
+- **`key`**: `string` - The storage key.
+- **`options`**: `UseSessionOptions<T, S>`
+  - `defaultValue`: `T` - Fallback value if no value exists in storage.
+  - `jsonSerialize?`: `boolean` (default: `true`) - Serialize with JSON.
+  - `selector?`: `(state: T) => S` - Optional selector function.
+
+**Returns:**
+- `item`: `S` - The current value (or selected value).
+- `setItem`: `(newValue: T | ((prev: T) => T)) => void` - Update value.
+- `removeItem`: `() => boolean` - Remove value. Returns `true` if removed.
+- `updateItem`: `(partial: Partial<T> | ((prev: T) => Partial<T>)) => void` - Deep merge partial update.
+
+### `RNLocalStorage<T, S>(key, options)`
+
+Non-hook class/function instance for storage outside React components.
+
+**Returns an object with:**
+- `get()`: `() => T`
+- `set(newValue: T | ((prev: T) => T))`: `void`
+- `remove()`: `() => boolean`
+- `update(partial: Partial<T> | ((prev: T) => Partial<T>))`: `void`
+- `subscribe(callback: (value: T) => void)`: `() => void`
+- `subscribeWithSelector(selector: (state: T) => S, callback: (value: S) => void)`: `() => void`
+
+### Exports
+
+The library exports:
+- `useLocalStorage`
+- `RNLocalStorage`
+- `storage` (Default `MMKV` instance)
+- `useStorageStore` (Underlying Zustand store)
+- `safeParse`
+- `deepMerge`
+- `serializeValue`
+- `createMMKV` (from `react-native-mmkv`)
+- Types: `RNLocalStorageInstance`, `StorageState`, `UseSessionOptions`, `SetValueCallback`, `UpdateValueCallback`, `StorageItemType`, `MMKV`, `Configuration`, `Mode`, `RecoveryStrategy`
+
+---
+
+## License
+
+MIT © [Abundance Ken-Dickson](https://github.com/abundiko)

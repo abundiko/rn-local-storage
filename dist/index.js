@@ -8,7 +8,8 @@
  * @see https://github.com/abundiko/rn-local-storage
  */
 export { useLocalStorage } from './hooks/useLocalStorage.js';
-export { storage } from './store/storage.js';
+export { storage, useStorageStore, safeParse } from './store/storage.js';
 export { RNLocalStorage } from './RNLocalStorage.js';
-export { deepMerge } from './utils.js';
+export { deepMerge, serializeValue } from './utils.js';
+export { createMMKV } from 'react-native-mmkv';
 //# sourceMappingURL=index.js.map

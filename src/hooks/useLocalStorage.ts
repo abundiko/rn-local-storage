@@ -12,6 +12,7 @@ export function useLocalStorage<T = any, S = T>(
   const removeStoreItem = useStorageStore((s) => s.removeItem);
   const hydrateKey = useStorageStore((s) => s.hydrateKey);
 
+  // Hydrate initial key synchronously if not yet loaded into store
   hydrateKey(key);
 
   const item = useStorageStore((state) => {
@@ -34,9 +35,10 @@ export function useLocalStorage<T = any, S = T>(
     [key, jsonSerialize, defaultValue, setStoreItem],
   );
 
-  const removeItem = useCallback(() => {
-    storage.delete(key);
+  const removeItem = useCallback((): boolean => {
+    const removed = storage.remove(key);
     removeStoreItem(key);
+    return removed;
   }, [key, removeStoreItem]);
 
   const updateItem = useCallback(

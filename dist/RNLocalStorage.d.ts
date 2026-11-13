@@ -2,7 +2,7 @@ import type { UseSessionOptions, SetValueCallback, UpdateValueCallback } from ".
 export interface RNLocalStorageInstance<T, S = T> {
     get: () => T;
     set: (newValue: T | SetValueCallback<T>) => void;
-    remove: () => void;
+    remove: () => boolean;
     update: (partial: Partial<T> | UpdateValueCallback<T>) => void;
     subscribe: (callback: (value: T) => void) => () => void;
     subscribeWithSelector: (selector: (state: T) => S, callback: (value: S) => void) => () => void;

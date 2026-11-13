@@ -1,9 +1,7 @@
-import type { } from "./types.js";
-
 export function serializeValue(
   value: unknown,
   jsonSerialize: boolean,
-): string | number | boolean {
+): string | number | boolean | ArrayBuffer {
   if (jsonSerialize) {
     return JSON.stringify(value);
   }
@@ -11,13 +9,14 @@ export function serializeValue(
   if (
     typeof value === "string" ||
     typeof value === "number" ||
-    typeof value === "boolean"
+    typeof value === "boolean" ||
+    value instanceof ArrayBuffer
   ) {
     return value;
   }
 
   throw new Error(
-    `MMKV can only store primitive types (string, number, boolean) when jsonSerialize is false. ` +
+    `MMKV can only store primitive types (string, number, boolean, ArrayBuffer) when jsonSerialize is false. ` +
       `Received type: ${typeof value}. Either set jsonSerialize to true or pass a primitive value.`,
   );
 }

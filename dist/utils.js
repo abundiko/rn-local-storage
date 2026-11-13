@@ -4,10 +4,11 @@ export function serializeValue(value, jsonSerialize) {
     }
     if (typeof value === "string" ||
         typeof value === "number" ||
-        typeof value === "boolean") {
+        typeof value === "boolean" ||
+        value instanceof ArrayBuffer) {
         return value;
     }
-    throw new Error(`MMKV can only store primitive types (string, number, boolean) when jsonSerialize is false. ` +
+    throw new Error(`MMKV can only store primitive types (string, number, boolean, ArrayBuffer) when jsonSerialize is false. ` +
         `Received type: ${typeof value}. Either set jsonSerialize to true or pass a primitive value.`);
 }
 export function deepMerge(current, partial) {
